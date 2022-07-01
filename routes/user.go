@@ -4,6 +4,10 @@ import (
 	"apartments-clone-server/models"
 	"apartments-clone-server/storage"
 	"apartments-clone-server/utils"
+	"encoding/json"
+	"io/ioutil"
+	"log"
+	"net/http"
 	"strings"
 
 	"github.com/kataras/iris/v12"
@@ -26,12 +30,7 @@ func Register(ctx iris.Context) {
 	}
 
 	if userExists == true {
-		utils.CreateError(
-			iris.StatusConflict,
-			"Conflict",
-			"Email already registered.",
-			ctx,
-		)
+		utils.CreateEmailAlreadyRegistered(ctx)
 		return
 	}
 
@@ -101,6 +100,71 @@ func Login(ctx iris.Context) {
 	})
 }
 
+func FacebookLoginOrSignUp(ctx iris.Context) {
+	var userInput FacebookUserInput
+	err := ctx.ReadJSON(&userInput)
+	if err != nil {
+		utils.HandleValidationErrors(err, ctx)
+	}
+
+	endpoint := "https://graph.facebook.com/me?fields=id,name,email&access_token=" + userInput.AccessToken
+	client := &http.Client{}
+	req, _ := http.NewRequest("GET", endpoint, nil)
+	res, facebookErr := client.Do(req)
+	if facebookErr != nil {
+		utils.CreateInternalServerError(ctx)
+		return
+	}
+
+	defer res.Body.Close()
+	body, bodyErr := ioutil.ReadAll(res.Body)
+	if bodyErr != nil {
+		log.Panic(bodyErr)
+		utils.CreateInternalServerError(ctx)
+		return
+	}
+
+	var facebookBody FacebookUserRes
+	json.Unmarshal(body, &facebookBody)
+
+	if facebookBody.Email != "" {
+		var user models.User
+		userExists, userExistsErr := getAndHandleUserExists(&user, facebookBody.Email)
+
+		if userExistsErr != nil {
+			utils.CreateInternalServerError(ctx)
+			return
+		}
+
+		if userExists == false {
+			nameArr := strings.SplitN(facebookBody.Name, " ", 2)
+			user = models.User{FirstName: nameArr[0], LastName: nameArr[1], Email: facebookBody.Email, SocialLogin: true, SocialProvider: "Facebook"}
+			storage.DB.Create(&user)
+
+			ctx.JSON(iris.Map{
+				"ID":        user.ID,
+				"firstName": user.FirstName,
+				"lastName":  user.LastName,
+				"email":     user.Email,
+			})
+			return
+		}
+
+		if user.SocialLogin == true && user.SocialProvider == "Facebook" {
+			ctx.JSON(iris.Map{
+				"ID":        user.ID,
+				"firstName": user.FirstName,
+				"lastName":  user.LastName,
+				"email":     user.Email,
+			})
+			return
+		}
+
+		utils.CreateEmailAlreadyRegistered(ctx)
+		return
+	}
+}
+
 func getAndHandleUserExists(user *models.User, email string) (exists bool, err error) {
 	userExistsQuery := storage.DB.Where("email = ?", strings.ToLower(email)).Limit(1).Find(&user)
 
@@ -136,4 +200,14 @@ type RegisterUserInput struct {
 type LoginUserInput struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
+}
+
+type FacebookUserInput struct {
+	AccessToken string `json:"accessToken" validate:"required"`
+}
+
+type FacebookUserRes struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }

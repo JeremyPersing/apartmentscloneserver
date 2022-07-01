@@ -19,6 +19,15 @@ func CreateInternalServerError(ctx iris.Context) {
 	)
 }
 
+func CreateEmailAlreadyRegistered(ctx iris.Context) {
+	CreateError(
+		iris.StatusConflict,
+		"Conflict",
+		"Email already registered.",
+		ctx,
+	)
+}
+
 func HandleValidationErrors(err error, ctx iris.Context) {
 	if errs, ok := err.(validator.ValidationErrors); ok {
 		validationErrors := wrapValidationErrors(errs)
