@@ -101,7 +101,7 @@ func Login(ctx iris.Context) {
 }
 
 func FacebookLoginOrSignUp(ctx iris.Context) {
-	var userInput FacebookUserInput
+	var userInput FacebookOrGoogleUserInput
 	err := ctx.ReadJSON(&userInput)
 	if err != nil {
 		utils.HandleValidationErrors(err, ctx)
@@ -165,6 +165,75 @@ func FacebookLoginOrSignUp(ctx iris.Context) {
 	}
 }
 
+func GoogleLoginOrSignUp(ctx iris.Context) {
+	var userInput FacebookOrGoogleUserInput
+	err := ctx.ReadJSON(&userInput)
+	if err != nil {
+		utils.HandleValidationErrors(err, ctx)
+		return
+	}
+
+	endpoint := "https://www.googleapis.com/userinfo/v2/me"
+
+	client := &http.Client{}
+	req, _ := http.NewRequest("GET", endpoint, nil)
+	header := "Bearer " + userInput.AccessToken
+	req.Header.Set("Authorization", header)
+	res, googleErr := client.Do(req)
+	if googleErr != nil {
+		utils.CreateInternalServerError(ctx)
+		return
+	}
+
+	defer res.Body.Close()
+	body, bodyErr := ioutil.ReadAll(res.Body)
+	if bodyErr != nil {
+		log.Panic(bodyErr)
+		utils.CreateInternalServerError(ctx)
+		return
+	}
+
+	var googleBody GoogleUserRes
+	json.Unmarshal(body, &googleBody)
+
+	if googleBody.Email != "" {
+		var user models.User
+		userExists, userExistsErr := getAndHandleUserExists(&user, googleBody.Email)
+
+		if userExistsErr != nil {
+			utils.CreateInternalServerError(ctx)
+			return
+		}
+
+		if userExists == false {
+			user = models.User{FirstName: googleBody.GivenName, LastName: googleBody.FamilyName, Email: googleBody.Email, SocialLogin: true, SocialProvider: "Google"}
+			storage.DB.Create(&user)
+
+			ctx.JSON(iris.Map{
+				"ID":        user.ID,
+				"firstName": user.FirstName,
+				"lastName":  user.LastName,
+				"email":     user.Email,
+			})
+			return
+		}
+
+		if user.SocialLogin == true && user.SocialProvider == "Google" {
+			ctx.JSON(iris.Map{
+				"ID":        user.ID,
+				"firstName": user.FirstName,
+				"lastName":  user.LastName,
+				"email":     user.Email,
+			})
+			return
+		}
+
+		utils.CreateEmailAlreadyRegistered(ctx)
+		return
+
+	}
+}
+
 func getAndHandleUserExists(user *models.User, email string) (exists bool, err error) {
 	userExistsQuery := storage.DB.Where("email = ?", strings.ToLower(email)).Limit(1).Find(&user)
 
@@ -202,7 +271,7 @@ type LoginUserInput struct {
 	Password string `json:"password" validate:"required"`
 }
 
-type FacebookUserInput struct {
+type FacebookOrGoogleUserInput struct {
 	AccessToken string `json:"accessToken" validate:"required"`
 }
 
@@ -210,4 +279,12 @@ type FacebookUserRes struct {
 	ID    string `json:"id"`
 	Name  string `json:"name"`
 	Email string `json:"email"`
+}
+
+type GoogleUserRes struct {
+	ID         string `json:"id"`
+	Email      string `json:"email"`
+	Name       string `json:"name"`
+	GivenName  string `json:"given_name"`
+	FamilyName string `json:"family_name"`
 }
