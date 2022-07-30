@@ -14,6 +14,7 @@ import (
 	"github.com/MicahParks/keyfunc"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/kataras/iris/v12"
+	jsonWT "github.com/kataras/iris/v12/middleware/jwt"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -310,6 +311,93 @@ func AppleLoginOrSignUp(ctx iris.Context) {
 	}
 }
 
+func ForgotPassword(ctx iris.Context) {
+	var emailInput EmailRegisteredInput
+	err := ctx.ReadJSON(&emailInput)
+	if err != nil {
+		utils.HandleValidationErrors(err, ctx)
+		return
+	}
+
+	var user models.User
+	userExists, userExistsErr := getAndHandleUserExists(&user, emailInput.Email)
+
+	if userExistsErr != nil {
+		utils.CreateInternalServerError(ctx)
+		return
+	}
+
+	if !userExists {
+		utils.CreateError(iris.StatusUnauthorized, "Credentials Error", "Invalid email.", ctx)
+		return
+	}
+
+	if userExists {
+		if user.SocialLogin {
+			utils.CreateError(iris.StatusUnauthorized, "Credentials Error", "Social Login Account", ctx)
+			return
+		}
+
+		link := "exp://192.168.30.24:19000/--/resetpassword/"
+		token, tokenErr := utils.CreateForgotPasswordToken(user.ID, user.Email)
+
+		if tokenErr != nil {
+			utils.CreateInternalServerError(ctx)
+			return
+		}
+
+		link += token
+		subject := "Forgot Your Password?"
+
+		html := `
+		<p>It looks like you forgot your password. 
+		If you did, please click the link below to reset it. 
+		If you did not, disregard this email. Please update your password
+		within 10 minutes, otherwise you will have to repeat this
+		process. <a href=` + link + `>Click to Reset Password</a>
+		</p><br />`
+
+		emailSent, emailSentErr := utils.SendMail(user.Email, subject, html)
+		if emailSentErr != nil {
+			utils.CreateInternalServerError(ctx)
+			return
+		}
+
+		if emailSent {
+			ctx.JSON(iris.Map{
+				"emailSent": true,
+			})
+			return
+		}
+
+		ctx.JSON(iris.Map{"emailSent": false})
+	}
+}
+
+func ResetPassword(ctx iris.Context) {
+	var password ResetPasswordInput
+	err := ctx.ReadJSON(&password)
+	if err != nil {
+		utils.HandleValidationErrors(err, ctx)
+		return
+	}
+
+	hashedPassword, hashErr := hashAndSaltPassword(password.Password)
+	if hashErr != nil {
+		utils.CreateInternalServerError(ctx)
+		return
+	}
+
+	claims := jsonWT.Get(ctx).(*utils.ForgotPasswordToken)
+
+	var user models.User
+	storage.DB.Model(&user).Where("id = ?", claims.ID).Update("password", hashedPassword)
+
+	ctx.JSON(iris.Map{
+		"passwordReset": true,
+	})
+}
+
 func getAndHandleUserExists(user *models.User, email string) (exists bool, err error) {
 	userExistsQuery := storage.DB.Where("email = ?", strings.ToLower(email)).Limit(1).Find(&user)
 
@@ -367,4 +455,12 @@ type GoogleUserRes struct {
 	Name       string `json:"name"`
 	GivenName  string `json:"given_name"`
 	FamilyName string `json:"family_name"`
+}
+
+type EmailRegisteredInput struct {
+	Email string `json:"email" validate:"required"`
+}
+
+type ResetPasswordInput struct {
+	Password string `json:"password" validate:"required,min=8,max=256"`
 }
