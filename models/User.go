@@ -10,4 +10,5 @@ type User struct {
 	Password       string `json:"password"`
 	SocialLogin    bool   `json:"socialLogin"`
 	SocialProvider string `json:"socialProvider"`
+	Manager        []Manager
 }
