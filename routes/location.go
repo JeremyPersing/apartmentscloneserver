@@ -29,7 +29,7 @@ func Search(ctx iris.Context) {
 
 	apiKey := os.Getenv("LOCATION_TOKEN")
 	url :=
-		"https://api.locationiq.com/v1/search.php?key=" + apiKey + "&q=" + location + "&format=json"
+		"https://api.locationiq.com/v1/search.php?key=" + apiKey + "&q=" + location + "&format=json&dedupe=1&addressdetails=1&matchquality=1&normalizeaddress=1&normalizecity=1"
 
 	fetchLocations(url, ctx)
 }
