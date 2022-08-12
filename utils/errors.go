@@ -42,6 +42,8 @@ func HandleValidationErrors(err error, ctx iris.Context) {
 
 		return
 	}
+
+	fmt.Print(err)
 	// It's probably an internal JSON error, let's not give more info here.
 	CreateInternalServerError(ctx)
 }

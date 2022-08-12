@@ -109,6 +109,7 @@ func FacebookLoginOrSignUp(ctx iris.Context) {
 	err := ctx.ReadJSON(&userInput)
 	if err != nil {
 		utils.HandleValidationErrors(err, ctx)
+		return
 	}
 
 	endpoint := "https://graph.facebook.com/me?fields=id,name,email&access_token=" + userInput.AccessToken
@@ -243,6 +244,7 @@ func AppleLoginOrSignUp(ctx iris.Context) {
 	err := ctx.ReadJSON(&userInput)
 	if err != nil {
 		utils.HandleValidationErrors(err, ctx)
+		return
 	}
 
 	res, httpErr := http.Get("https://appleid.apple.com/auth/keys")
