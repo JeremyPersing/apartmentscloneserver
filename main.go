@@ -44,7 +44,12 @@ func main() {
 	manager := app.Party("/api/manager")
 	{
 		manager.Post("/create", routes.CreateManager)
-		manager.Get("/userid/{id}", routes.GetManagersByUserID)
+		manager.Get("/userid/{id}", routes.GetManagerByUserID)
+	}
+	property := app.Party("/api/property")
+	{
+		property.Post("/create", routes.CreateProperty)
+		property.Get("/{id}", routes.GetProperty)
 	}
 
 	app.Listen(":4000")
