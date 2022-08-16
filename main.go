@@ -41,11 +41,6 @@ func main() {
 		user.Post("/forgotpassword", routes.ForgotPassword)
 		user.Post("/resetpassword", resetTokenVerifierMiddleware, routes.ResetPassword)
 	}
-	manager := app.Party("/api/manager")
-	{
-		manager.Post("/create", routes.CreateManager)
-		manager.Get("/userid/{id}", routes.GetManagerByUserID)
-	}
 	property := app.Party("/api/property")
 	{
 		property.Post("/create", routes.CreateProperty)

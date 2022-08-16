@@ -58,7 +58,7 @@ func CreateProperty(ctx iris.Context) {
 		BathroomLow:  bathroomLow,
 		BathroomHigh: bathroomHigh,
 		Apartments:   apartments,
-		ManagerID:    propertyInput.ManagerID,
+		UserID:       propertyInput.UserID,
 	}
 
 	storage.DB.Create(&property)
@@ -97,7 +97,7 @@ type PropertyInput struct {
 	Zip          int              `json:"zip" validate:"required"`
 	Lat          float32          `json:"lat" validate:"required"`
 	Lng          float32          `json:"lng" validate:"required"`
-	ManagerID    uint             `json:"managerID" validate:"required"`
+	UserID       uint             `json:"userID" validate:"required"`
 	Apartments   []ApartmentInput `json:"apartments" validate:"required,dive"`
 }
 
