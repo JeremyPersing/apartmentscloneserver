@@ -45,6 +45,8 @@ func main() {
 	{
 		property.Post("/create", routes.CreateProperty)
 		property.Get("/{id}", routes.GetProperty)
+		property.Get("/userid/{id}", routes.GetPropertiesByUserID)
+		property.Delete("/{id}", routes.DeleteProperty)
 	}
 
 	app.Listen(":4000")

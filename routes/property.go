@@ -88,6 +88,39 @@ func GetProperty(ctx iris.Context) {
 	ctx.JSON(property)
 }
 
+func GetPropertiesByUserID(ctx iris.Context) {
+	params := ctx.Params()
+	id := params.Get("id")
+
+	var properties []models.Property
+	propertiesExist := storage.DB.Preload("Apartments").Where("user_id = ?", id).Find(&properties)
+
+	if propertiesExist.Error != nil {
+		utils.CreateError(
+			iris.StatusInternalServerError,
+			"Error", propertiesExist.Error.Error(), ctx)
+		return
+	}
+
+	ctx.JSON(properties)
+}
+
+func DeleteProperty(ctx iris.Context) {
+	params := ctx.Params()
+	id := params.Get("id")
+
+	propertyDeleted := storage.DB.Delete(&models.Property{}, id)
+
+	if propertyDeleted.Error != nil {
+		utils.CreateError(
+			iris.StatusInternalServerError,
+			"Error", propertyDeleted.Error.Error(), ctx)
+		return
+	}
+
+	ctx.StatusCode(iris.StatusNoContent)
+}
+
 type PropertyInput struct {
 	UnitType     string           `json:"unitType" validate:"required,oneof=single multiple"`
 	PropertyType string           `json:"propertyType" validate:"required,max=256"`
