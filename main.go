@@ -47,6 +47,7 @@ func main() {
 		property.Get("/{id}", routes.GetProperty)
 		property.Get("/userid/{id}", routes.GetPropertiesByUserID)
 		property.Delete("/{id}", routes.DeleteProperty)
+		property.Patch("/update/{id}", routes.UpdateProperty)
 	}
 
 	app.Listen(":4000")
