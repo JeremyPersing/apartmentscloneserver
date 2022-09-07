@@ -47,7 +47,7 @@ func CreateProperty(ctx iris.Context) {
 			Bedrooms:    *element.Bedrooms,
 			Bathrooms:   element.Bathrooms,
 			AvailableOn: element.AvailableOn,
-			Active:      *element.Active,
+			Active:      element.Active,
 		})
 	}
 
@@ -77,18 +77,8 @@ func GetProperty(ctx iris.Context) {
 	params := ctx.Params()
 	id := params.Get("id")
 
-	var property models.Property
-	propertyExists := storage.DB.Preload("Apartments").Find(&property, id)
-
-	if propertyExists.Error != nil {
-		utils.CreateError(
-			iris.StatusInternalServerError,
-			"Error", propertyExists.Error.Error(), ctx)
-		return
-	}
-
-	if propertyExists.RowsAffected == 0 {
-		utils.CreateError(iris.StatusNotFound, "Property Not Found", "Property Not Found", ctx)
+	property := GetPropertyAndApartmentsByPropertyID(id, ctx)
+	if property == nil {
 		return
 	}
 
@@ -133,13 +123,8 @@ func UpdateProperty(ctx iris.Context) {
 	params := ctx.Params()
 	id := params.Get("id")
 
-	var property models.Property
-	propertyExists := storage.DB.Preload("Apartments").Find(&property, id)
-
-	if propertyExists.Error != nil {
-		utils.CreateError(
-			iris.StatusInternalServerError,
-			"Error", propertyExists.Error.Error(), ctx)
+	property := GetPropertyAndApartmentsByPropertyID(id, ctx)
+	if property == nil {
 		return
 	}
 
@@ -191,7 +176,7 @@ func UpdateProperty(ctx iris.Context) {
 			Deposit:     *apartment.Deposit,
 			LeaseLength: apartment.LeaseLength,
 			AvailableOn: apartment.AvailableOn,
-			Active:      *apartment.Active,
+			Active:      apartment.Active,
 			Amenities:   amenities,
 			Description: apartment.Description,
 		}
@@ -231,7 +216,7 @@ func UpdateProperty(ctx iris.Context) {
 	property.CountryCode = propertyInput.CountryCode
 	property.PhoneNumber = propertyInput.PhoneNumber
 	property.Website = propertyInput.Website
-	property.OnMarket = *propertyInput.OnMarket
+	property.OnMarket = propertyInput.OnMarket
 	property.BathroomHigh = bathroomHigh
 	property.BathroomLow = bathroomLow
 	property.BedroomLow = bedroomLow
@@ -260,6 +245,26 @@ func UpdateProperty(ctx iris.Context) {
 	ctx.StatusCode(iris.StatusNoContent)
 }
 
+func GetPropertyAndApartmentsByPropertyID(id string, ctx iris.Context) *models.Property {
+
+	var property models.Property
+	propertyExists := storage.DB.Preload("Apartments").Find(&property, id)
+
+	if propertyExists.Error != nil {
+		utils.CreateError(
+			iris.StatusInternalServerError,
+			"Error", propertyExists.Error.Error(), ctx)
+		return nil
+	}
+
+	if propertyExists.RowsAffected == 0 {
+		utils.CreateError(iris.StatusNotFound, "Property Not Found", "Property Not Found", ctx)
+		return nil
+	}
+
+	return &property
+}
+
 func updateApartmentAndImages(apartment models.Apartment, images []string) {
 	apartmentID := strconv.FormatUint(uint64(apartment.ID), 10)
 
@@ -280,7 +285,7 @@ func updateApartmentAndImages(apartment models.Apartment, images []string) {
 func insertImages(arg InsertImages) []string {
 	var imagesArr []string
 	for _, image := range arg.images {
-		if !strings.Contains(image, "http") {
+		if !strings.Contains(image, storage.BucketName) {
 			imageID := randstr.Hex(16)
 			imageStr := "property/" + arg.propertyID
 			if arg.apartmentID != nil {

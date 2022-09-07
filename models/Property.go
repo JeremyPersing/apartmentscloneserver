@@ -31,7 +31,7 @@ type Property struct {
 	FirstName         string         `json:"firstName"`
 	LastName          string         `json:"lastName"`
 	LaundryType       string         `json:"laundryType"`
-	OnMarket          bool           `json:"onMarket"`
+	OnMarket          *bool          `json:"onMarket"`
 	ParkingFee        float32        `json:"parkingFee"`
 	PetsAllowed       string         `json:"petsAllowed"`
 	CountryCode       string         `json:"countryCode"`

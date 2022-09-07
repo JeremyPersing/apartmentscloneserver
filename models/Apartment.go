@@ -18,7 +18,7 @@ type Apartment struct {
 	Deposit     float32        `json:"deposit"`
 	LeaseLength string         `json:"leaseLength"`
 	AvailableOn time.Time      `json:"availableOn"`
-	Active      bool           `json:"active"`
+	Active      *bool          `json:"active"`
 	Images      datatypes.JSON `json:"images"`
 	Amenities   datatypes.JSON `json:"amenities"`
 	Description string         `json:"description"`
