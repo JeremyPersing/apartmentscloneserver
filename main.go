@@ -48,6 +48,7 @@ func main() {
 		property.Get("/userid/{id}", routes.GetPropertiesByUserID)
 		property.Delete("/{id}", routes.DeleteProperty)
 		property.Patch("/update/{id}", routes.UpdateProperty)
+		property.Post("/search", routes.GetPropertiesByBoundingBox)
 	}
 	apartment := app.Party("/api/apartment")
 	{

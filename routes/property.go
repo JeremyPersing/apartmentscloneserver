@@ -265,6 +265,23 @@ func GetPropertyAndApartmentsByPropertyID(id string, ctx iris.Context) *models.P
 	return &property
 }
 
+func GetPropertiesByBoundingBox(ctx iris.Context) {
+	var boundingBox BoundingBoxInput
+	err := ctx.ReadJSON(&boundingBox)
+	if err != nil {
+		utils.HandleValidationErrors(err, ctx)
+		return
+	}
+
+	var properties []models.Property
+	storage.DB.Preload("Apartments").
+		Where("lat >= ? AND lat <= ? AND lng >= ? AND lng <= ? AND on_market = true",
+			boundingBox.LatLow, boundingBox.LatHigh, boundingBox.LngLow, boundingBox.LngHigh).
+		Find(&properties)
+
+	ctx.JSON(properties)
+}
+
 func updateApartmentAndImages(apartment models.Apartment, images []string) {
 	apartmentID := strconv.FormatUint(uint64(apartment.ID), 10)
 
@@ -363,4 +380,11 @@ type UpdateApartmentsInput struct {
 	Images      []string  `json:"images"`
 	Amenities   []string  `json:"amenities"`
 	Description string    `json:"description"`
+}
+
+type BoundingBoxInput struct {
+	LatLow  float32 `json:"latLow" validate:"required"`
+	LatHigh float32 `json:"latHigh" validate:"required"`
+	LngLow  float32 `json:"lngLow" validate:"required"`
+	LngHigh float32 `json:"lngHigh" validate:"required"`
 }
