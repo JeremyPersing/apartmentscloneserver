@@ -38,5 +38,7 @@ type Property struct {
 	CallingCode       string         `json:"callingCode"`
 	PhoneNumber       string         `json:"phoneNumber"`
 	Website           string         `json:"website"`
+	Stars             float32        `json:"stars"`
 	Apartments        []Apartment    `json:"apartments"`
+	Reviews           []Review       `json:"reviews"`
 }

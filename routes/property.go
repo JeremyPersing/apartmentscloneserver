@@ -11,6 +11,7 @@ import (
 
 	"github.com/kataras/iris/v12"
 	"github.com/thanhpk/randstr"
+	"gorm.io/gorm/clause"
 )
 
 func CreateProperty(ctx iris.Context) {
@@ -77,7 +78,7 @@ func GetProperty(ctx iris.Context) {
 	params := ctx.Params()
 	id := params.Get("id")
 
-	property := GetPropertyAndApartmentsByPropertyID(id, ctx)
+	property := GetPropertyAndAssociationsByPropertyID(id, ctx)
 	if property == nil {
 		return
 	}
@@ -90,7 +91,7 @@ func GetPropertiesByUserID(ctx iris.Context) {
 	id := params.Get("id")
 
 	var properties []models.Property
-	propertiesExist := storage.DB.Preload("Apartments").Where("user_id = ?", id).Find(&properties)
+	propertiesExist := storage.DB.Preload(clause.Associations).Where("user_id = ?", id).Find(&properties)
 
 	if propertiesExist.Error != nil {
 		utils.CreateError(
@@ -123,7 +124,7 @@ func UpdateProperty(ctx iris.Context) {
 	params := ctx.Params()
 	id := params.Get("id")
 
-	property := GetPropertyAndApartmentsByPropertyID(id, ctx)
+	property := GetPropertyAndAssociationsByPropertyID(id, ctx)
 	if property == nil {
 		return
 	}
@@ -245,10 +246,10 @@ func UpdateProperty(ctx iris.Context) {
 	ctx.StatusCode(iris.StatusNoContent)
 }
 
-func GetPropertyAndApartmentsByPropertyID(id string, ctx iris.Context) *models.Property {
+func GetPropertyAndAssociationsByPropertyID(id string, ctx iris.Context) *models.Property {
 
 	var property models.Property
-	propertyExists := storage.DB.Preload("Apartments").Find(&property, id)
+	propertyExists := storage.DB.Preload(clause.Associations).Find(&property, id)
 
 	if propertyExists.Error != nil {
 		utils.CreateError(
@@ -274,7 +275,7 @@ func GetPropertiesByBoundingBox(ctx iris.Context) {
 	}
 
 	var properties []models.Property
-	storage.DB.Preload("Apartments").
+	storage.DB.Preload(clause.Associations).
 		Where("lat >= ? AND lat <= ? AND lng >= ? AND lng <= ? AND on_market = true",
 			boundingBox.LatLow, boundingBox.LatHigh, boundingBox.LngLow, boundingBox.LngHigh).
 		Find(&properties)

@@ -30,7 +30,7 @@ func UpdateApartments(ctx iris.Context) {
 	params := ctx.Params()
 	id := params.Get("id")
 
-	property := GetPropertyAndApartmentsByPropertyID(id, ctx)
+	property := GetPropertyAndAssociationsByPropertyID(id, ctx)
 	if property == nil {
 		return
 	}
