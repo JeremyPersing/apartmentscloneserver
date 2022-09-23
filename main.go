@@ -40,6 +40,8 @@ func main() {
 		user.Post("/apple", routes.AppleLoginOrSignUp)
 		user.Post("/forgotpassword", routes.ForgotPassword)
 		user.Post("/resetpassword", resetTokenVerifierMiddleware, routes.ResetPassword)
+		user.Get("/{id}/properties/saved", routes.GetUserSavedProperties)
+		user.Patch("/{id}/properties/saved", routes.AlterUserSavedProperties)
 	}
 	property := app.Party("/api/property")
 	{
