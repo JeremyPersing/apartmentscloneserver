@@ -31,6 +31,7 @@ require (
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/kataras/jwt v0.1.8 // indirect
+	github.com/oliveroneill/exponent-server-sdk-golang v0.0.0-20210823140141-d050598be512 // indirect
 	github.com/thanhpk/randstr v1.0.4 // indirect
 	golang.org/x/exp v0.0.0-20220916125017-b168a2c6b86b // indirect
 	gorm.io/driver/mysql v1.3.2 // indirect

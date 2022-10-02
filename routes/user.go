@@ -56,11 +56,12 @@ func Register(ctx iris.Context) {
 	storage.DB.Create(&newUser)
 
 	ctx.JSON(iris.Map{
-		"ID":              newUser.ID,
-		"firstName":       newUser.FirstName,
-		"lastName":        newUser.LastName,
-		"email":           newUser.Email,
-		"savedProperties": newUser.SavedProperties,
+		"ID":                  newUser.ID,
+		"firstName":           newUser.FirstName,
+		"lastName":            newUser.LastName,
+		"email":               newUser.Email,
+		"savedProperties":     newUser.SavedProperties,
+		"allowsNotifications": newUser.AllowsNotifications,
 	})
 }
 
@@ -100,11 +101,12 @@ func Login(ctx iris.Context) {
 	}
 
 	ctx.JSON(iris.Map{
-		"ID":              existingUser.ID,
-		"firstName":       existingUser.FirstName,
-		"lastName":        existingUser.LastName,
-		"email":           existingUser.Email,
-		"savedProperties": existingUser.SavedProperties,
+		"ID":                  existingUser.ID,
+		"firstName":           existingUser.FirstName,
+		"lastName":            existingUser.LastName,
+		"email":               existingUser.Email,
+		"savedProperties":     existingUser.SavedProperties,
+		"allowsNotifications": existingUser.AllowsNotifications,
 	})
 }
 
@@ -151,22 +153,24 @@ func FacebookLoginOrSignUp(ctx iris.Context) {
 			storage.DB.Create(&user)
 
 			ctx.JSON(iris.Map{
-				"ID":              user.ID,
-				"firstName":       user.FirstName,
-				"lastName":        user.LastName,
-				"email":           user.Email,
-				"savedProperties": user.SavedProperties,
+				"ID":                  user.ID,
+				"firstName":           user.FirstName,
+				"lastName":            user.LastName,
+				"email":               user.Email,
+				"savedProperties":     user.SavedProperties,
+				"allowsNotifications": user.AllowsNotifications,
 			})
 			return
 		}
 
 		if user.SocialLogin == true && user.SocialProvider == "Facebook" {
 			ctx.JSON(iris.Map{
-				"ID":              user.ID,
-				"firstName":       user.FirstName,
-				"lastName":        user.LastName,
-				"email":           user.Email,
-				"savedProperties": user.SavedProperties,
+				"ID":                  user.ID,
+				"firstName":           user.FirstName,
+				"lastName":            user.LastName,
+				"email":               user.Email,
+				"savedProperties":     user.SavedProperties,
+				"allowsNotifications": user.AllowsNotifications,
 			})
 			return
 		}
@@ -221,22 +225,24 @@ func GoogleLoginOrSignUp(ctx iris.Context) {
 			storage.DB.Create(&user)
 
 			ctx.JSON(iris.Map{
-				"ID":              user.ID,
-				"firstName":       user.FirstName,
-				"lastName":        user.LastName,
-				"email":           user.Email,
-				"savedProperties": user.SavedProperties,
+				"ID":                  user.ID,
+				"firstName":           user.FirstName,
+				"lastName":            user.LastName,
+				"email":               user.Email,
+				"savedProperties":     user.SavedProperties,
+				"allowsNotifications": user.AllowsNotifications,
 			})
 			return
 		}
 
 		if user.SocialLogin == true && user.SocialProvider == "Google" {
 			ctx.JSON(iris.Map{
-				"ID":              user.ID,
-				"firstName":       user.FirstName,
-				"lastName":        user.LastName,
-				"email":           user.Email,
-				"savedProperties": user.SavedProperties,
+				"ID":                  user.ID,
+				"firstName":           user.FirstName,
+				"lastName":            user.LastName,
+				"email":               user.Email,
+				"savedProperties":     user.SavedProperties,
+				"allowsNotifications": user.AllowsNotifications,
 			})
 			return
 		}
@@ -298,22 +304,24 @@ func AppleLoginOrSignUp(ctx iris.Context) {
 			storage.DB.Create(&user)
 
 			ctx.JSON(iris.Map{
-				"ID":              user.ID,
-				"firstName":       user.FirstName,
-				"lastName":        user.LastName,
-				"email":           user.Email,
-				"savedProperties": user.SavedProperties,
+				"ID":                  user.ID,
+				"firstName":           user.FirstName,
+				"lastName":            user.LastName,
+				"email":               user.Email,
+				"savedProperties":     user.SavedProperties,
+				"allowsNotifications": user.AllowsNotifications,
 			})
 			return
 		}
 
 		if user.SocialLogin == true && user.SocialProvider == "Apple" {
 			ctx.JSON(iris.Map{
-				"ID":              user.ID,
-				"firstName":       user.FirstName,
-				"lastName":        user.LastName,
-				"email":           user.Email,
-				"savedProperties": user.SavedProperties,
+				"ID":                  user.ID,
+				"firstName":           user.FirstName,
+				"lastName":            user.LastName,
+				"email":               user.Email,
+				"savedProperties":     user.SavedProperties,
+				"allowsNotifications": user.AllowsNotifications,
 			})
 			return
 		}
@@ -506,6 +514,95 @@ func AlterUserSavedProperties(ctx iris.Context) {
 	ctx.StatusCode(iris.StatusNoContent)
 }
 
+func AlterPushToken(ctx iris.Context) {
+	params := ctx.Params()
+	id := params.Get("id")
+
+	user := getUserByID(id, ctx)
+	if user == nil {
+		return
+	}
+
+	var req AlterPushTokenInput
+	err := ctx.ReadJSON(&req)
+	if err != nil {
+		utils.HandleValidationErrors(err, ctx)
+		return
+	}
+
+	var unMarshalledTokens []string
+	var pushTokens []string
+
+	if user.PushTokens != nil {
+		unmarshalErr := json.Unmarshal(user.PushTokens, &unMarshalledTokens)
+
+		if unmarshalErr != nil {
+			utils.CreateInternalServerError(ctx)
+			return
+		}
+	}
+
+	if req.Op == "add" {
+		if !slices.Contains(unMarshalledTokens, req.Token) {
+			pushTokens = append(unMarshalledTokens, req.Token)
+		} else {
+			pushTokens = unMarshalledTokens
+		}
+	} else if req.Op == "remove" && len(unMarshalledTokens) > 0 {
+		for _, token := range unMarshalledTokens {
+			if req.Token != token {
+				pushTokens = append(pushTokens, token)
+			}
+		}
+	}
+
+	marshalledTokens, marshalErr := json.Marshal(pushTokens)
+
+	if marshalErr != nil {
+		utils.CreateInternalServerError(ctx)
+		return
+	}
+
+	user.PushTokens = marshalledTokens
+
+	rowsUpdated := storage.DB.Model(&user).Updates(user)
+
+	if rowsUpdated.Error != nil {
+		utils.CreateInternalServerError(ctx)
+		return
+	}
+
+	ctx.StatusCode(iris.StatusNoContent)
+}
+
+func AllowsNotifications(ctx iris.Context) {
+	params := ctx.Params()
+	id := params.Get("id")
+
+	user := getUserByID(id, ctx)
+	if user == nil {
+		return
+	}
+
+	var req AllowsNotificationsInput
+	err := ctx.ReadJSON(&req)
+	if err != nil {
+		utils.HandleValidationErrors(err, ctx)
+		return
+	}
+
+	user.AllowsNotifications = req.AllowsNotifications
+
+	rowsUpdated := storage.DB.Model(&user).Updates(user)
+
+	if rowsUpdated.Error != nil {
+		utils.CreateInternalServerError(ctx)
+		return
+	}
+
+	ctx.StatusCode(iris.StatusNoContent)
+}
+
 func getAndHandleUserExists(user *models.User, email string) (exists bool, err error) {
 	userExistsQuery := storage.DB.Where("email = ?", strings.ToLower(email)).Limit(1).Find(&user)
 
@@ -593,4 +690,13 @@ type ResetPasswordInput struct {
 type AlterSavedPropertiesInput struct {
 	PropertyID uint   `json:"propertyID" validate:"required"`
 	Op         string `json:"op" validate:"required"`
+}
+
+type AlterPushTokenInput struct {
+	Token string `json:"token" validate:"required"`
+	Op    string `json:"op" validate:"required"`
+}
+
+type AllowsNotificationsInput struct {
+	AllowsNotifications *bool `json:"allowsNotifications" validate:"required"`
 }
