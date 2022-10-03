@@ -12,7 +12,7 @@ func TestMessageNotification(ctx iris.Context) {
 	}
 
 	err := utils.SendNotification(
-		"ExponentPushToken[RTOty9GBCIC4olaxCV4TEO]",
+		"ExponentPushToken[Xxxxxxxxxxxxxxxxxxxxxx]",
 		"Push Title", "Push body is this message", data)
 	if err != nil {
 		utils.CreateInternalServerError(ctx)
