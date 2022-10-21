@@ -44,10 +44,11 @@ func main() {
 		user.Patch("/{id}/properties/saved", routes.AlterUserSavedProperties)
 		user.Patch("/{id}/pushtoken", routes.AlterPushToken)
 		user.Patch("/{id}/settings/notifications", routes.AllowsNotifications)
+		user.Get("/{id}/properties/contacted", routes.GetUserContactedProperties)
 	}
 	property := app.Party("/api/property")
 	{
-		property.Post("/create", routes.CreateProperty)
+		property.Post("/", routes.CreateProperty)
 		property.Get("/{id}", routes.GetProperty)
 		property.Get("/userid/{id}", routes.GetPropertiesByUserID)
 		property.Delete("/{id}", routes.DeleteProperty)
@@ -62,6 +63,16 @@ func main() {
 	review := app.Party("/api/review")
 	{
 		review.Post("/property/{id}", routes.CreateReview)
+	}
+	conversation := app.Party("/api/conversation")
+	{
+		conversation.Post("/", routes.CreateConversation)
+		conversation.Get("/{id}", routes.GetConversationByID)
+		conversation.Get("/user/{id}", routes.GetConversationsByUserID)
+	}
+	messages := app.Party("/api/messages")
+	{
+		messages.Post("/", routes.CreateMessage)
 	}
 	notifications := app.Party("/api/notifications")
 	{

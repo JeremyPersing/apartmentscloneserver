@@ -252,14 +252,12 @@ func GetPropertyAndAssociationsByPropertyID(id string, ctx iris.Context) *models
 	propertyExists := storage.DB.Preload(clause.Associations).Find(&property, id)
 
 	if propertyExists.Error != nil {
-		utils.CreateError(
-			iris.StatusInternalServerError,
-			"Error", propertyExists.Error.Error(), ctx)
+		utils.CreateInternalServerError(ctx)
 		return nil
 	}
 
 	if propertyExists.RowsAffected == 0 {
-		utils.CreateError(iris.StatusNotFound, "Property Not Found", "Property Not Found", ctx)
+		utils.CreateNotFound(ctx)
 		return nil
 	}
 

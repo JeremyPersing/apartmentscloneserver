@@ -30,10 +30,12 @@ func connectToDB() *gorm.DB {
 
 func performMigrations(db *gorm.DB) {
 	db.AutoMigrate(
+		&models.Conversation{}, // create table containing many side first
+		&models.Message{},
+		&models.User{},
+		&models.Property{},
 		&models.Review{},
 		&models.Apartment{},
-		&models.Property{},
-		&models.User{},
 	)
 }
 

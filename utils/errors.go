@@ -28,6 +28,11 @@ func CreateEmailAlreadyRegistered(ctx iris.Context) {
 	)
 }
 
+func CreateNotFound(ctx iris.Context) {
+	ctx.StatusCode(iris.StatusNotFound)
+	ctx.Text("Not Found")
+}
+
 func HandleValidationErrors(err error, ctx iris.Context) {
 	if errs, ok := err.(validator.ValidationErrors); ok {
 		validationErrors := wrapValidationErrors(errs)
