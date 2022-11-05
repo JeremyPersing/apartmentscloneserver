@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/middleware/jwt"
 )
 
 func GetApartmentsByPropertyID(ctx iris.Context) {
@@ -32,6 +33,13 @@ func UpdateApartments(ctx iris.Context) {
 
 	property := GetPropertyAndAssociationsByPropertyID(id, ctx)
 	if property == nil {
+		return
+	}
+
+	claims := jwt.Get(ctx).(*utils.AccessToken)
+
+	if property.UserID != claims.ID {
+		ctx.StatusCode(iris.StatusForbidden)
 		return
 	}
 

@@ -8,6 +8,7 @@ import (
 	"sort"
 
 	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/middleware/jwt"
 	"gorm.io/gorm"
 )
 
@@ -17,6 +18,13 @@ func CreateConversation(ctx iris.Context) {
 	err := ctx.ReadJSON(&req)
 	if err != nil {
 		utils.HandleValidationErrors(err, ctx)
+		return
+	}
+
+	claims := jwt.Get(ctx).(*utils.AccessToken)
+
+	if req.SenderID != claims.ID {
+		ctx.StatusCode(iris.StatusForbidden)
 		return
 	}
 
@@ -62,6 +70,13 @@ func GetConversationByID(ctx iris.Context) {
 	result, err := getConversationResult(id, ctx)
 
 	if err != nil {
+		return
+	}
+
+	claims := jwt.Get(ctx).(*utils.AccessToken)
+
+	if result.OwnerID != claims.ID && result.TenantID != claims.ID {
+		ctx.StatusCode(iris.StatusForbidden)
 		return
 	}
 

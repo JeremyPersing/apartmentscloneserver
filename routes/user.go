@@ -55,14 +55,7 @@ func Register(ctx iris.Context) {
 
 	storage.DB.Create(&newUser)
 
-	ctx.JSON(iris.Map{
-		"ID":                  newUser.ID,
-		"firstName":           newUser.FirstName,
-		"lastName":            newUser.LastName,
-		"email":               newUser.Email,
-		"savedProperties":     newUser.SavedProperties,
-		"allowsNotifications": newUser.AllowsNotifications,
-	})
+	returnUser(newUser, ctx)
 }
 
 func Login(ctx iris.Context) {
@@ -100,14 +93,7 @@ func Login(ctx iris.Context) {
 		return
 	}
 
-	ctx.JSON(iris.Map{
-		"ID":                  existingUser.ID,
-		"firstName":           existingUser.FirstName,
-		"lastName":            existingUser.LastName,
-		"email":               existingUser.Email,
-		"savedProperties":     existingUser.SavedProperties,
-		"allowsNotifications": existingUser.AllowsNotifications,
-	})
+	returnUser(existingUser, ctx)
 }
 
 func FacebookLoginOrSignUp(ctx iris.Context) {
@@ -152,26 +138,12 @@ func FacebookLoginOrSignUp(ctx iris.Context) {
 			user = models.User{FirstName: nameArr[0], LastName: nameArr[1], Email: facebookBody.Email, SocialLogin: true, SocialProvider: "Facebook"}
 			storage.DB.Create(&user)
 
-			ctx.JSON(iris.Map{
-				"ID":                  user.ID,
-				"firstName":           user.FirstName,
-				"lastName":            user.LastName,
-				"email":               user.Email,
-				"savedProperties":     user.SavedProperties,
-				"allowsNotifications": user.AllowsNotifications,
-			})
+			returnUser(user, ctx)
 			return
 		}
 
 		if user.SocialLogin == true && user.SocialProvider == "Facebook" {
-			ctx.JSON(iris.Map{
-				"ID":                  user.ID,
-				"firstName":           user.FirstName,
-				"lastName":            user.LastName,
-				"email":               user.Email,
-				"savedProperties":     user.SavedProperties,
-				"allowsNotifications": user.AllowsNotifications,
-			})
+			returnUser(user, ctx)
 			return
 		}
 
@@ -224,26 +196,12 @@ func GoogleLoginOrSignUp(ctx iris.Context) {
 			user = models.User{FirstName: googleBody.GivenName, LastName: googleBody.FamilyName, Email: googleBody.Email, SocialLogin: true, SocialProvider: "Google"}
 			storage.DB.Create(&user)
 
-			ctx.JSON(iris.Map{
-				"ID":                  user.ID,
-				"firstName":           user.FirstName,
-				"lastName":            user.LastName,
-				"email":               user.Email,
-				"savedProperties":     user.SavedProperties,
-				"allowsNotifications": user.AllowsNotifications,
-			})
+			returnUser(user, ctx)
 			return
 		}
 
 		if user.SocialLogin == true && user.SocialProvider == "Google" {
-			ctx.JSON(iris.Map{
-				"ID":                  user.ID,
-				"firstName":           user.FirstName,
-				"lastName":            user.LastName,
-				"email":               user.Email,
-				"savedProperties":     user.SavedProperties,
-				"allowsNotifications": user.AllowsNotifications,
-			})
+			returnUser(user, ctx)
 			return
 		}
 
@@ -303,26 +261,12 @@ func AppleLoginOrSignUp(ctx iris.Context) {
 			user = models.User{FirstName: "", LastName: "", Email: email, SocialLogin: true, SocialProvider: "Apple"}
 			storage.DB.Create(&user)
 
-			ctx.JSON(iris.Map{
-				"ID":                  user.ID,
-				"firstName":           user.FirstName,
-				"lastName":            user.LastName,
-				"email":               user.Email,
-				"savedProperties":     user.SavedProperties,
-				"allowsNotifications": user.AllowsNotifications,
-			})
+			returnUser(user, ctx)
 			return
 		}
 
 		if user.SocialLogin == true && user.SocialProvider == "Apple" {
-			ctx.JSON(iris.Map{
-				"ID":                  user.ID,
-				"firstName":           user.FirstName,
-				"lastName":            user.LastName,
-				"email":               user.Email,
-				"savedProperties":     user.SavedProperties,
-				"allowsNotifications": user.AllowsNotifications,
-			})
+			returnUser(user, ctx)
 			return
 		}
 
@@ -675,6 +619,26 @@ func getUserByID(id string, ctx iris.Context) *models.User {
 	}
 
 	return &user
+}
+
+func returnUser(user models.User, ctx iris.Context) {
+	tokenPair, tokenErr := utils.CreateTokenPair(user.ID)
+	if tokenErr != nil {
+		utils.CreateInternalServerError(ctx)
+		return
+	}
+
+	ctx.JSON(iris.Map{
+		"ID":                  user.ID,
+		"firstName":           user.FirstName,
+		"lastName":            user.LastName,
+		"email":               user.Email,
+		"savedProperties":     user.SavedProperties,
+		"allowsNotifications": user.AllowsNotifications,
+		"accessToken":         string(tokenPair.AccessToken),
+		"refreshToken":        string(tokenPair.RefreshToken),
+	})
+
 }
 
 type RegisterUserInput struct {
